@@ -28,9 +28,9 @@ public:
 	/**
 	 * 开始代理
 	 */
-	void run();
+	virtual void run();
 
-private:
+protected:
 	int load_request();
 
 	int forward_request();

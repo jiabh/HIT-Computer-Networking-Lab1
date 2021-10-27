@@ -15,7 +15,7 @@ add_executable(http_proxy_server
         src/http_message/Response.cpp src/http_message/Response.h
         src/utils/http_utl.cpp src/utils/http_utl.h
         src/ThreadPool.cpp src/ThreadPool.h
-        src/utils/socket_utl.cpp src/utils/socket_utl.h src/set_signals.cpp src/set_signals.h)
+        src/utils/socket_utl.cpp src/utils/socket_utl.h src/set_signals.cpp src/set_signals.h src/BlacklistProxy.cpp src/BlacklistProxy.h)
 
 find_package(Threads)
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
