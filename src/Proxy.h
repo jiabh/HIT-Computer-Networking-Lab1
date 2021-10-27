@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include "http_message/Request.h"
 #include "http_message/Response.h"
 
@@ -22,6 +23,8 @@ protected:
 	std::vector<std::string> user_blacklist;
 	std::vector<std::string> host_blacklist;
 
+	std::map<string, string> fishing_host;
+
 public:
 	/**
 	 * 已经accept客户端连接的套接字
@@ -33,7 +36,8 @@ public:
 	Proxy(
 			int client_sock,
 			std::vector<string> &user_blacklist,
-			std::vector<string> &host_blacklist
+			std::vector<string> &host_blacklist,
+			std::map<string, string> &fishing_host
 	);
 
 	/**

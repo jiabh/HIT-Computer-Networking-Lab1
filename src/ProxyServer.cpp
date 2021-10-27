@@ -8,6 +8,7 @@
 #include <cstring>
 #include <vector>
 #include <string>
+#include <map>
 #include "ThreadPool.h"
 #include "logging.h"
 #include "http_message/Request.h"
@@ -57,9 +58,11 @@ int ProxyServer::init()
 {
 	std::vector<string> user_blacklist; // 用户IP黑名单
 	std::vector<string> host_blacklist; // 域名IP黑名单
+	std::map<string, string> fishing_host; // 钓鱼映射
 
 //	user_blacklist = {"127.0.0.1"};
 //	host_blacklist = {"unlock-music.jiabh.cn"};
+//	fishing_host["data.srfcworld.com"] = "unlock-music.jiabh.cn";
 
 	// 线程池
 	ThreadPool pool(this->config.th_cnt);
@@ -79,7 +82,7 @@ int ProxyServer::init()
 			continue;
 		}
 
-		auto *p_proxy = new Proxy(client_sock, user_blacklist, host_blacklist);
+		auto *p_proxy = new Proxy(client_sock, user_blacklist, host_blacklist, fishing_host);
 		pool.add_task(
 				[ObjectPtr = p_proxy]
 				{

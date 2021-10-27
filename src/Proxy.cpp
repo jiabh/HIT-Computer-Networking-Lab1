@@ -16,14 +16,16 @@
 Proxy::Proxy(
 		int client_sock,
 		std::vector<string> &user_blacklist,
-		std::vector<string> &host_blacklist) :
+		std::vector<string> &host_blacklist,
+		std::map<string, string> &fishing_host) :
 
 		client_sock(client_sock),
 		target_sock(-1),
 		client_request(client_sock),
 		target_response(-1, -1), // invalid by default
 		user_blacklist(user_blacklist),
-		host_blacklist(host_blacklist)
+		host_blacklist(host_blacklist),
+		fishing_host(fishing_host)
 {}
 
 void Proxy::run()
@@ -50,6 +52,18 @@ void Proxy::run()
 			close(this->client_sock);
 			return;
 		}
+
+	// 钓鱼
+	if (!client_request.hostname.empty()) // 存在Host字段
+	{
+		auto fish_it = fishing_host.find(client_request.hostname);
+		if (fish_it != fishing_host.end()) // 是目标网站，重写
+		{
+			client_request.hostname = fish_it->second;
+			client_request.headers["Host"] = fish_it->second;
+			log_info("Fish: %s -> %s\n", fish_it->first.c_str(), fish_it->second.c_str());
+		}
+	}
 
 	err = forward_request();
 	if (err == -1)
