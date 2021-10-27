@@ -32,6 +32,11 @@ protected:
 	size_t body_len = 0; // body长度
 
 public:
+
+	HTTPMessage(int from_sock, int to_sock);
+
+	virtual ~HTTPMessage();
+
 	/**
 	 * 读取并解析报文
 	 *

@@ -12,10 +12,8 @@
 #include "util.h"
 #include "Response.h"
 
-Response::Response(int from_sock, int to_sock)
+Response::Response(int from_sock, int to_sock) : HTTPMessage(from_sock, to_sock)
 {
-	this->from_sock = from_sock;
-	this->to_sock = to_sock;
 }
 
 int Response::load()

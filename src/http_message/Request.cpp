@@ -13,10 +13,8 @@
 #include "Request.h"
 
 
-Request::Request(int from_sock, int to_sock)
+Request::Request(int from_sock, int to_sock) : HTTPMessage(from_sock, to_sock)
 {
-	this->from_sock = from_sock;
-	this->to_sock = to_sock;
 }
 
 int Request::load()

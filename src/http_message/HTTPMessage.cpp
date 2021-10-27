@@ -10,6 +10,18 @@
 #include "../logging.h"
 #include "HTTPMessage.h"
 
+HTTPMessage::HTTPMessage(int from_sock, int to_sock)
+{
+	this->from_sock = from_sock;
+	this->to_sock = to_sock;
+}
+
+HTTPMessage::~HTTPMessage()
+{
+	delete this->buffer;
+	delete this->body;
+}
+
 int HTTPMessage::load_headers_and_body(char *p_headers)
 {
 	std::pair<size_t, std::map<std::string, std::string>> headers_res = parse_headers(p_headers); // 要算上请求行末尾的\r\n
