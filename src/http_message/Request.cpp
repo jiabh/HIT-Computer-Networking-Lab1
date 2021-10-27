@@ -15,11 +15,14 @@
 
 
 Request::Request(int from_sock, int to_sock) : HTTPMessage(from_sock, to_sock)
-{
-}
+{}
 
 int Request::load()
 {
+	// 首先获取peer主机信息
+	size_t peer_addr_len = sizeof(peer_addr);
+	getpeername(from_sock, (sockaddr *) &peer_addr, (socklen_t *) &peer_addr_len);
+
 	buffer = new char[BUFFER_LEN]; // 申请缓存
 	this->bf_len = 0;
 
@@ -120,8 +123,8 @@ int Request::send()
 			return -1;
 		}
 
-		sockaddr_in target_addr = init_sockaddr_in(char_buf, this->port); // 与目标主机的套接字设置
-		err = connect(to_sock, (sockaddr *) &target_addr, sizeof(target_addr));
+		connected_addr = init_sockaddr_in(char_buf, this->port); // 与目标主机的套接字设置
+		err = connect(to_sock, (sockaddr *) &connected_addr, sizeof(connected_addr));
 		if (err < 0)
 		{
 			log_warn_with_msg("connect() to %s:%d failed.", this->hostname.c_str(), this->port);

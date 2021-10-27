@@ -11,13 +11,16 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <netinet/in.h>
 #include "HTTPMessage.h"
 
 
 class Request : public HTTPMessage
 {
-
 public:
+	sockaddr_in peer_addr{}; // 源地址
+	sockaddr_in connected_addr{}; // 目的地址
+
 	char method[METHOD_MAX_LEN + 1]{'\0'}; // 请求方法
 	char url[URL_MAX_LEN + 1]{'\0'};
 
