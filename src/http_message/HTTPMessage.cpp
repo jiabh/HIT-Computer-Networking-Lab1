@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <map>
 #include <string>
-#include "util.h"
+#include "../utils/http_utl.h"
 #include "../logging.h"
 #include "HTTPMessage.h"
 
@@ -49,7 +49,8 @@ int HTTPMessage::load_headers_and_body(char *p_headers)
 		switch (this->bf_len)
 		{
 			case -1: // ERROR
-				log_warn("a socket read error occurred.\n");
+				log_error("a socket read error occurred.\n");
+				errno = 0;
 				return 1;
 			case 0: // EOF
 				return 1;

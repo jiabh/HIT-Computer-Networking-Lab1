@@ -4,13 +4,15 @@
 
 #include <map>
 #include <string>
-#include "../util.h"
-#include "util.h"
+#include <cstring>
+#include "str_utl.h"
+#include "http_utl.h"
 
 
 sockaddr_in init_sockaddr_in(char *address, uint16_t port)
 {
 	sockaddr_in addr{};
+	bzero(&addr, sizeof(addr));
 	addr.sin_family = AF_INET; // IPv4
 	addr.sin_addr.s_addr = inet_addr(address); // 设置地址
 	addr.sin_port = htons(port); // 设置端口

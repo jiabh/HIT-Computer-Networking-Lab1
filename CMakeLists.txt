@@ -9,9 +9,13 @@ add_executable(http_proxy_server
         src/ServerConfig.cpp src/ServerConfig.h
         src/Proxy.cpp src/Proxy.h
         src/logging.h
-        src/util.cpp src/util.h
+        src/utils/str_utl.cpp src/utils/str_utl.h
         src/http_message/HTTPMessage.cpp src/http_message/HTTPMessage.h
         src/http_message/Request.cpp src/http_message/Request.h
         src/http_message/Response.cpp src/http_message/Response.h
-        src/http_message/util.cpp src/http_message/util.h
-        )
+        src/utils/http_utl.cpp src/utils/http_utl.h
+        src/ThreadPool.cpp src/ThreadPool.h
+        src/utils/socket_utl.cpp src/utils/socket_utl.h src/set_signals.cpp src/set_signals.h)
+
+find_package(Threads)
+target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})

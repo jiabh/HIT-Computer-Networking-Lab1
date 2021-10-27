@@ -8,8 +8,8 @@
 #include <unistd.h>
 #include <vector>
 #include "../logging.h"
-#include "../util.h"
-#include "util.h"
+#include "../utils/str_utl.h"
+#include "../utils/http_utl.h"
 #include "Response.h"
 
 Response::Response(int from_sock, int to_sock) : HTTPMessage(from_sock, to_sock)
@@ -25,7 +25,8 @@ int Response::load()
 	switch (this->bf_len)
 	{
 		case -1: // ERROR
-			log_warn("a socket read error occurred.\n");
+			log_error_with_msg("a socket read error occurred.");
+			errno = 0;
 			return 1;
 		case 0: // EOF
 			return 1;
@@ -73,21 +74,30 @@ int Response::load()
 
 int Response::send()
 {
-	// write client_request line
-	write(to_sock, version, strlen(version));
-	write(to_sock, " ", 1);
-	write(to_sock, code, strlen(code));
-	write(to_sock, " ", 1);
-	write(to_sock, phrase, strlen(phrase));
-	write(to_sock, "\r\n", 2);
+	char sp[] = " ";
+	char rn[] = "\r\n";
+
+	// write status line
+	const size_t Q_LEN = 6;
+	char *sending_queue[Q_LEN] = {version, sp, code, sp, phrase, rn};
+	for (auto s: sending_queue)
+	{
+		if (write(to_sock, s, strlen(s)) == -1)
+			return -1;
+	}
 
 	// write headers with body separator
+	ssize_t ret;
 	std::string h_str = headers2str(headers);
-	h_str.append("\r\n");
-	write(to_sock, h_str.c_str(), h_str.length());
+	h_str.append(rn);
+	ret = write(to_sock, h_str.c_str(), h_str.length());
+	if (ret == -1)
+		return -1;
 
 	// write body
-	write(to_sock, body, body_len);
+	ret = write(to_sock, body, body_len);
+	if (ret == -1)
+		return -1;
 
 	return to_sock;
 }

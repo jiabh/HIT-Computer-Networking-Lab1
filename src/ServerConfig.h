@@ -8,8 +8,9 @@
 class ServerConfig
 {
 public:
-	char address[16] = "127.0.0.1";
-	uint16_t port = 2021;
+	char address[16] = "127.0.0.1"; // 监听地址
+	uint16_t port = 2021;           // 监听端口
+	size_t th_cnt = 20;             // 线程个数
 
 	/**
 	 * 从命令行中读取配置，如果有误直接退出程序

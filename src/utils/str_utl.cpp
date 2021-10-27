@@ -3,7 +3,7 @@
 //
 
 #include <cstring>
-#include "util.h"
+#include "str_utl.h"
 
 void Next(const char *T, size_t len_T, int *next)
 {

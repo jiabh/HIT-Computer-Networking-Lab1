@@ -4,9 +4,13 @@
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <cerrno>
+#include <cstring>
+#include "ThreadPool.h"
 #include "logging.h"
 #include "http_message/Request.h"
-#include "http_message/util.h"
+#include "utils/http_utl.h"
+#include "set_signals.h"
 #include "Proxy.h"
 #include "ProxyServer.h"
 
@@ -14,6 +18,8 @@
 ProxyServer::ProxyServer(ServerConfig config)
 {
 	this->config = config;
+
+	clear_sig_pipe(); // 屏蔽SIGPIPE信号
 }
 
 int ProxyServer::init()
@@ -27,7 +33,7 @@ int ProxyServer::init()
 	serv_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 创建套接字
 	if (serv_sock < 0)
 	{
-		log_error("create socket failed (return %d)\n", this->serv_sock);
+		log_error_with_msg("create socket failed.");
 		exit(1);
 	}
 
@@ -35,8 +41,7 @@ int ProxyServer::init()
 	err = bind(serv_sock, (sockaddr *) &serv_addr, sizeof(serv_addr));
 	if (err < 0)
 	{
-		log_error("bind() to %s:%d failed (return %d)\n",
-				  this->config.address, this->config.port, this->serv_sock);
+		log_error_with_msg("bind() to %s:%d failed.", this->config.address, this->config.port);
 		exit(1);
 	}
 
@@ -48,22 +53,31 @@ int ProxyServer::init()
 
 [[noreturn]] void ProxyServer::start() const
 {
+	// 线程池
+	ThreadPool pool(this->config.th_cnt);
+
+	// 客户端套接字配置
 	sockaddr_in client_addr{};
 	socklen_t client_addr_size = sizeof(client_addr);
-	int client_sock, proxy_sock;
 
+	pool.start();
 	while (true)
 	{
-		client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &client_addr_size);
+		int client_sock = accept(serv_sock, (struct sockaddr *) &client_addr, &client_addr_size);
 		if (client_sock == -1)
 		{
-			log_warn("An accept error occurred.\n");
+			log_error("an accept error occurred.\n");
+			errno = 0;
 			continue;
 		}
 
-		Proxy proxy(client_sock);
-		proxy.run();
-
-
+		auto *p_proxy = new Proxy(client_sock);
+		pool.add_task(
+				[ObjectPtr = p_proxy]
+				{
+					ObjectPtr->run(); // 运行该代理
+					delete ObjectPtr; // 释放资源
+				}
+		);
 	}
 }

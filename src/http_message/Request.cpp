@@ -7,8 +7,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include "../logging.h"
-#include "../util.h"
-#include "util.h"
+#include "../utils/str_utl.h"
+#include "../utils/http_utl.h"
+#include "../utils/socket_utl.h"
 #include "HTTPMessage.h"
 #include "Request.h"
 
@@ -26,10 +27,11 @@ int Request::load()
 	switch (this->bf_len)
 	{
 		case -1: // ERROR
-			log_warn("a socket read error occurred.\n");
-			return 1;
+			log_warn_with_msg("a socket read error occurred.");
+			errno = 0;
+			return -1;
 		case 0: // EOF
-			return 1;
+			return -1;
 		default: // correct
 			break;
 	}
@@ -89,50 +91,69 @@ int Request::send()
 {
 	if (this->to_sock < 0) // 未手动设置发出报文的套接字，进行连接
 	{
+		int err;
+
 		// DNS解析
-		hostent *h = gethostbyname(this->hostname.c_str()); // 参考链接：http://c.biancheng.net/view/2357.html
-		if (h == nullptr)
+		hostent result_buf{}, *h_res;
+		char char_buf[1024];
+		int h_errnop;
+		err = gethostbyname_r(this->hostname.c_str(),
+							  &result_buf,
+							  char_buf, sizeof(char_buf),
+							  &h_res,
+							  &h_errnop); // 可重入的DNS解析
+		if (err || h_res == nullptr)
 		{
-			log_warn("could not found host %s.", this->hostname.c_str());
+			log_warn("could not found host %s.\n", this->hostname.c_str());
 			return -1;
 		}
-		log_success("host %s found, ip: %s\n", this->hostname.c_str(), inet_ntoa(*((in_addr *) h->h_addr)));
+
+		// 从此时，char_buf中存储的是host对应IP的字符串
+		inet_ntoa_r(*((in_addr *) h_res->h_addr), char_buf);
+//		log_info("host %s found, ip: %s\n", this->hostname.c_str(), char_buf); // host found log
 
 		this->to_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 创建套接字
 		if (to_sock < 0)
 		{
-			log_error("create socket failed (return %d)\n", to_sock);
+			log_warn_with_msg("create socket failed.");
+			errno = 0;
 			return -1;
 		}
 
-		sockaddr_in target_addr = init_sockaddr_in( // 与目标主机的套接字设置
-				inet_ntoa(*((in_addr *) h->h_addr)),
-				this->port
-		);
-		int err = connect(to_sock, (sockaddr *) &target_addr, sizeof(target_addr));
+		sockaddr_in target_addr = init_sockaddr_in(char_buf, this->port); // 与目标主机的套接字设置
+		err = connect(to_sock, (sockaddr *) &target_addr, sizeof(target_addr));
 		if (err < 0)
 		{
-			log_warn("connect() to %s:%d failed (return %d)\n",
-					 this->hostname.c_str(), this->port, err);
+			log_warn_with_msg("connect() to %s:%d failed.", this->hostname.c_str(), this->port);
+			errno = 0;
 			return -1;
 		}
 	}
 
-	// write client_request line
-	write(to_sock, method, strlen(method));
-	write(to_sock, " ", 1);
-	write(to_sock, url, strlen(url));
-	write(to_sock, " ", 1);
-	write(to_sock, version, strlen(version));
-	write(to_sock, "\r\n", 2);
+	char sp[] = " ";
+	char rn[] = "\r\n";
+
+	// write request line
+	const size_t Q_LEN = 6;
+	char *sending_queue[Q_LEN] = {method, sp, url, sp, version, rn};
+	for (auto s: sending_queue)
+	{
+		if (write(to_sock, s, strlen(s)) == -1) // write error
+			return -1;
+	}
 
 	// write headers with body separator
+	ssize_t ret;
 	std::string h_str = headers2str(headers);
 	h_str.append("\r\n");
-	write(to_sock, h_str.c_str(), h_str.length());
+	ret = write(to_sock, h_str.c_str(), h_str.length());
+	if (ret == -1)
+		return -1;
 
 	// write body
-	write(to_sock, body, body_len);
+	ret = write(to_sock, body, body_len);
+	if (ret == -1)
+		return -1;
 
 	return this->to_sock;
 }

@@ -2,8 +2,8 @@
 // Created by jiabh on 2021/10/26.
 //
 
-#ifndef HTTP_PROXY_SERVER_UTIL_H
-#define HTTP_PROXY_SERVER_UTIL_H
+#ifndef HTTP_PROXY_SERVER_STR_UTL_H
+#define HTTP_PROXY_SERVER_STR_UTL_H
 
 #include <vector>
 #include <string>
@@ -40,4 +40,4 @@ std::pair<size_t, std::vector<size_t>> split_str(char *src, const char *delimite
  */
 std::string &trim(std::string &s, const std::string &pattern = " ");
 
-#endif //HTTP_PROXY_SERVER_UTIL_H
+#endif //HTTP_PROXY_SERVER_STR_UTL_H

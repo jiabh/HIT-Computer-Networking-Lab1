@@ -40,7 +40,7 @@ public:
 	/**
 	 * 读取并解析报文
 	 *
-	 * @return 0 if success, 1 if error
+	 * @return 0 if success, -1 if error
 	 */
 	virtual int load() = 0;
 

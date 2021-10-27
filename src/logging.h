@@ -23,7 +23,17 @@
 
 #define log_warn(format, args...) (printf( ESC_START COLOR_WARN "Warning: " ESC_END format, ##args))
 
+/**
+ * 输出警告日志，并输出错误错误代号和描述，以及行末的换行符
+ */
+#define log_warn_with_msg(format, args...) (printf( ESC_START COLOR_WARN "Warning: " ESC_END format " (%d %s)\n", ##args, errno, strerror(errno)))
+
 #define log_error(format, args...) (printf( ESC_START COLOR_ERROR "Error: " format ESC_END, ##args))
+
+/**
+ * 输出错误日志，并输出错误错误代号和描述，以及行末的换行符
+ */
+#define log_error_with_msg(format, args...) (printf( ESC_START COLOR_ERROR "Error: " format " (%d %s)\n" ESC_END, ##args, errno, strerror(errno)))
 
 
 #endif //HTTP_PROXY_SERVER_LOGGING_H
