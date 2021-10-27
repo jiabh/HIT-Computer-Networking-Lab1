@@ -3,9 +3,11 @@
 //
 
 #include <cstring>
+#include <unistd.h>
 #include <map>
 #include <string>
 #include "util.h"
+#include "../logging.h"
 #include "HTTPMessage.h"
 
 int HTTPMessage::load_headers_and_body(char *p_headers)
@@ -23,14 +25,27 @@ int HTTPMessage::load_headers_and_body(char *p_headers)
 		this->body_len = (ssize_t) (buffer + bf_len - p_body);
 
 	// 申请body并写入
-	// 从此时起，p_body指代缓冲区中body部分的首地址，bf_len指代缓冲区中body的字节数
+	// 从此时起，bf_len指代缓冲区中body的字节数
 	this->body = new char[this->body_len];
 	bf_len -= (ssize_t) (p_body - buffer);
 	size_t body_left = body_len;
-	while (body_left)
+	memcpy(this->body, p_body, bf_len); // 将当前缓冲区中的body拷贝过去
+	body_left -= bf_len;
+	while (body_left) // 如果存在，获取剩余的body
 	{
-		memcpy(body, p_body, bf_len);
-		body_left -= bf_len;
+		bf_len = read(this->from_sock, buffer, BUFFER_LEN);
+		switch (this->bf_len)
+		{
+			case -1: // ERROR
+				log_warn("a socket read error occurred.\n");
+				return 1;
+			case 0: // EOF
+				return 1;
+			default: // correct
+				memcpy(this->body + body_len - body_left, buffer, bf_len); // 将当前缓冲区中的body拷贝过去
+				body_left -= bf_len;
+				break;
+		}
 	}
 	return 0;
 }

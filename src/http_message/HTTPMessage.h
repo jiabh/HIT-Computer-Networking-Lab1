@@ -5,6 +5,9 @@
 #ifndef HTTP_PROXY_SERVER_HTTPMESSAGE_H
 #define HTTP_PROXY_SERVER_HTTPMESSAGE_H
 
+// 缓存大小 > 8KB，这样第一次读取一定能读完首部
+#define BUFFER_LEN (1024 * 8 + 100)
+
 #define VERSION_MAX_LEN 8
 
 #include <map>

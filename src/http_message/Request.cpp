@@ -2,9 +2,6 @@
 // Created by jiabh on 2021/10/26.
 //
 
-// 缓存大小 > 8KB，这样第一次读取一定能读完首部
-#define BUFFER_LEN (1024 * 8 + 100)
-
 #include <cstring>
 #include <unistd.h>
 #include <sys/socket.h>
