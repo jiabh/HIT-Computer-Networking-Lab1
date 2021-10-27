@@ -92,7 +92,7 @@ int Request::send()
 	if (this->to_sock < 0) // 未手动设置发出报文的套接字，进行连接
 	{
 		// DNS解析
-		hostent *h = gethostbyname(this->hostname.c_str());
+		hostent *h = gethostbyname(this->hostname.c_str()); // 参考链接：http://c.biancheng.net/view/2357.html
 		if (h == nullptr)
 		{
 			log_warn("could not found host %s.", this->hostname.c_str());

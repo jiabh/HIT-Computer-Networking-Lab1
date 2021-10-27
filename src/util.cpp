@@ -26,6 +26,10 @@ void Next(const char *T, size_t len_T, int *next)
 
 ssize_t KMP(const char *S, size_t len_S, const char *T, size_t len_T)
 {
+	/**
+	 * 参考链接：KMP算法（快速模式匹配算法）C语言详解
+	 * http://data.biancheng.net/view/180.html
+	 */
 	int next[len_T];
 	Next(T, len_T, next);//根据模式串T,初始化next数组
 	size_t i = 1;
@@ -76,6 +80,10 @@ std::pair<size_t, std::vector<size_t>> split_str(char *src, const char *delimite
 
 std::string &trim(std::string &s, const std::string &pattern)
 {
+	/**
+	 * 参考链接：C++ string的trim, split方法
+	 * https://blog.csdn.net/Butterfly_Dreaming/article/details/10142443
+	 */
 	if (s.empty())
 		return s;
 

@@ -18,6 +18,10 @@ ProxyServer::ProxyServer(ServerConfig config)
 
 int ProxyServer::init()
 {
+	/**
+	 * 参考链接：一个简单的Linux下的socket程序
+	 * http://c.biancheng.net/cpp/html/3030.html
+	 */
 	int err;
 
 	serv_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // 创建套接字

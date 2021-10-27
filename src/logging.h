@@ -5,6 +5,11 @@
 #ifndef HTTP_PROXY_SERVER_LOGGING_H
 #define HTTP_PROXY_SERVER_LOGGING_H
 
+/**
+ * 参考链接：C/C++关于printf的宏定义封装
+ * https://blog.csdn.net/Poetry_And_Distance/article/details/81007604
+ */
+
 #define ESC_START     "\033["
 #define ESC_END       "\033[0m"
 #define COLOR_SUCCESS "32;40;1m"
