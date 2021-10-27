@@ -4,6 +4,7 @@
 
 
 #include <iostream>
+#include <cstring>
 #include <unistd.h>
 #include "http_message/Request.h"
 #include "http_message/Response.h"
@@ -12,10 +13,17 @@
 #include "Proxy.h"
 
 
-Proxy::Proxy(int client_sock) : client_sock(client_sock),
-								target_sock(-1),
-								client_request(client_sock),
-								target_response(-1, -1) // invalid by default
+Proxy::Proxy(
+		int client_sock,
+		std::vector<string> &user_blacklist,
+		std::vector<string> &host_blacklist) :
+
+		client_sock(client_sock),
+		target_sock(-1),
+		client_request(client_sock),
+		target_response(-1, -1), // invalid by default
+		user_blacklist(user_blacklist),
+		host_blacklist(host_blacklist)
 {}
 
 void Proxy::run()
@@ -24,6 +32,24 @@ void Proxy::run()
 	err = load_request();
 	if (err == -1)
 		return;
+
+	char client_ip[16];
+	inet_ntoa_r(client_request.peer_addr.sin_addr, client_ip);
+
+	for (auto &it: user_blacklist) // 过滤用户
+		if (!strcmp(it.c_str(), client_ip))
+		{
+			log_warn("blocked a request from %s\n", client_ip);
+			close(this->client_sock);
+			return;
+		}
+	for (auto &it: host_blacklist) // 过滤网站
+		if (it == client_request.hostname)
+		{
+			log_warn("blocked a request to %s\n", it.c_str());
+			close(this->client_sock);
+			return;
+		}
 
 	err = forward_request();
 	if (err == -1)
@@ -98,7 +124,6 @@ int Proxy::forward_response()
 		);
 	}
 
-	quit:
 	close(this->client_sock);
 	close(this->target_sock);
 	return 0;

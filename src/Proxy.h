@@ -5,6 +5,8 @@
 #ifndef HTTP_PROXY_SERVER_PROXY_H
 #define HTTP_PROXY_SERVER_PROXY_H
 
+#include <vector>
+#include <string>
 #include "http_message/Request.h"
 #include "http_message/Response.h"
 
@@ -17,13 +19,22 @@ protected:
 	Request client_request;
 	Response target_response;
 
+	std::vector<std::string> user_blacklist;
+	std::vector<std::string> host_blacklist;
+
 public:
 	/**
 	 * 已经accept客户端连接的套接字
 	 *
 	 * @param client_sock 与客户端连接的套接字
+	 * @param user_blacklist 用户黑名单
+	 * @param host_blacklist 主机黑名单
 	 */
-	explicit Proxy(int client_sock);
+	Proxy(
+			int client_sock,
+			std::vector<string> &user_blacklist,
+			std::vector<string> &host_blacklist
+	);
 
 	/**
 	 * 开始代理

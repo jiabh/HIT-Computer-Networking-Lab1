@@ -13,7 +13,7 @@
 #include "http_message/Request.h"
 #include "utils/http_utl.h"
 #include "set_signals.h"
-#include "BlacklistProxy.h"
+#include "Proxy.h"
 #include "ProxyServer.h"
 
 
@@ -56,9 +56,10 @@ int ProxyServer::init()
 [[noreturn]] void ProxyServer::start() const
 {
 	std::vector<string> user_blacklist; // 用户IP黑名单
-//	std::vector<string> user_blacklist = {"127.0.0.1"};
 	std::vector<string> host_blacklist; // 域名IP黑名单
-//	std::vector<string> host_blacklist = {"unlock-music.jiabh.cn"};
+
+//	user_blacklist = {"127.0.0.1"};
+//	host_blacklist = {"unlock-music.jiabh.cn"};
 
 	// 线程池
 	ThreadPool pool(this->config.th_cnt);
@@ -78,7 +79,7 @@ int ProxyServer::init()
 			continue;
 		}
 
-		auto *p_proxy = new BlacklistProxy(client_sock, user_blacklist, host_blacklist);
+		auto *p_proxy = new Proxy(client_sock, user_blacklist, host_blacklist);
 		pool.add_task(
 				[ObjectPtr = p_proxy]
 				{
