@@ -12,6 +12,15 @@
 
 class Response : public HTTPMessage
 {
+protected:
+	enum class BodyType
+	{
+		Chunked,       // Transfer-Encoding: chunked
+		ContentLength, // Content-Length: XXX
+		Unknown        // 未知传输格式
+	};
+	BodyType body_type = BodyType::Unknown;
+	char *p_buf = buffer; // 指向当前buffer中的第一个有效位置
 public:
 	char code[CODE_MAX_LEN + 1]{'\0'}; // 状态码
 	char phrase[PHRASE_MAX_LEN + 1]{'\0'}; // 状态短语

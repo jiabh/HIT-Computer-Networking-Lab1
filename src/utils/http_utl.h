@@ -32,4 +32,12 @@ std::pair<size_t, std::map<std::string, std::string>> parse_headers(char *messag
  */
 std::string headers2str(std::map<std::string, std::string> &headers);
 
+/**
+ * 获取一个chunk的大小
+ *
+ * @param p_chunk 指向该chunk的第一个字节
+ * @return 成功返回chunk大小，失败返回-1
+ */
+ssize_t get_chunk_size(char *p_chunk);
+
 #endif //HTTP_PROXY_SERVER_HTTP_MSG_UTIL_H

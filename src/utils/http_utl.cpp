@@ -61,3 +61,13 @@ std::string headers2str(std::map<std::string, std::string> &headers)
 
 	return res;
 }
+
+ssize_t get_chunk_size(char *p_chunk)
+{
+	ssize_t chunk_size;
+	const int res_cnt = sscanf(p_chunk, "%zx\r\n", &chunk_size);
+	if (res_cnt != 1 || chunk_size < 0)
+		return -1;
+	else
+		return chunk_size;
+}

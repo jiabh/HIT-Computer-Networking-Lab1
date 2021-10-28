@@ -18,6 +18,10 @@ Response::Response(int from_sock, int to_sock) : HTTPMessage(from_sock, to_sock)
 
 int Response::load()
 {
+	/**
+	 * 进行一次read，缓存在this->buffer中，解析其中的响应头部分
+	 */
+
 	buffer = new char[BUFFER_LEN]; // 申请缓存
 	this->bf_len = 0;
 
@@ -27,9 +31,9 @@ int Response::load()
 		case -1: // ERROR
 			log_error_with_msg("a socket read error occurred.");
 			errno = 0;
-			return 1;
+			return -1;
 		case 0: // EOF
-			return 1;
+			return -1;
 		default: // correct
 			break;
 	}
@@ -68,41 +72,59 @@ int Response::load()
 	this->headers = headers_res.second;
 
 	/* 设置并读取body */
-	char *p_body = p_headers + headers_len + 2;
+	p_buf = p_headers + headers_len + 2;
+	auto te_item = headers.find("Transfer-Encoding");
 	auto cl_item = headers.find("Content-Length");
-	if (cl_item != headers.end()) // 存在Content-Length字段
-		this->body_len = std::stoi(cl_item->second);
-	else // 没有设置body大小，设置成当前buffer的剩余部分
-		this->body_len = (ssize_t) (buffer + bf_len - p_body);
+	if (te_item != headers.end() && te_item->second == "chunked")
+		body_type = BodyType::Chunked;
+	else if (cl_item != headers.end())
+		body_type = BodyType::ContentLength;
+	else
+		body_type = BodyType::Unknown;
 
-	// 申请body并写入
-	// 从此时起，bf_len指代缓冲区中body的字节数
-	this->body = new char[this->body_len];
-	bf_len -= (ssize_t) (p_body - buffer);
-	size_t body_left = body_len;
-	memcpy(this->body, p_body, bf_len); // 将当前缓冲区中的body拷贝过去
-	body_left -= bf_len;
-	while (body_left) // 如果存在，获取剩余的body
+	if (body_type == BodyType::Chunked)
 	{
-		bf_len = read(this->from_sock, buffer, BUFFER_LEN);
-		switch (this->bf_len)
-		{
-			case -1: // ERROR
-				log_error("a socket read error occurred.\n");
-				errno = 0;
-				return 1;
-			case 0: // EOF
-				return 1;
-			default: // correct
-				memcpy(this->body + body_len - body_left, buffer, bf_len); // 将当前缓冲区中的body拷贝过去
-				body_left -= bf_len;
-				break;
-		}
-	}
+		/* 当设置Transfer-Encoding: chunked时，不在这里解析body，在send解析 */
+		// 将buffer中剩余的chunk主体移到buffer的前面
+		size_t left_buf = bf_len - (size_t) (p_buf - buffer); // buffer中剩余有效缓存的大小
+		memmove(buffer, p_buf, left_buf);
+		bf_len = (ssize_t) left_buf; // 更新有效缓存长度
+	} else
+	{
+		if (body_type == BodyType::ContentLength)
+			this->body_len = std::stoi(cl_item->second);
+		else
+			this->body_len = (ssize_t) (buffer + bf_len - p_buf);
 
-	/* 读取完毕，释放缓冲区 */
-	delete[] buffer;
-	buffer = nullptr;
+		// 申请body并写入
+		// 从此时起，bf_len指代缓冲区中body的字节数
+		this->body = new char[this->body_len];
+		bf_len -= (ssize_t) (p_buf - buffer);
+		size_t body_left = body_len;
+		memcpy(this->body, p_buf, bf_len); // 将当前缓冲区中的body拷贝过去
+		body_left -= bf_len;
+		while (body_left) // 如果存在，获取剩余的body
+		{
+			bf_len = read(this->from_sock, buffer, BUFFER_LEN);
+			switch (this->bf_len)
+			{
+				case -1: // ERROR
+					log_error("a socket read error occurred.\n");
+					errno = 0;
+					return -1;
+				case 0: // EOF
+					return -1;
+				default: // correct
+					memcpy(this->body + body_len - body_left, buffer, bf_len); // 将当前缓冲区中的body拷贝过去
+					body_left -= bf_len;
+					break;
+			}
+		}
+
+		/* 读取完毕，释放缓冲区 */
+		delete[] buffer;
+		buffer = nullptr;
+	}
 
 	return 0;
 }
@@ -129,10 +151,87 @@ int Response::send()
 	if (ret == -1)
 		return -1;
 
-	// write body
-	ret = write(to_sock, body, body_len);
-	if (ret == -1)
-		return -1;
+	if (body_type == BodyType::Chunked)
+	{
+		// 此时buffer未释放，buffer[0]存放着body部分的第一个字节，以此类推
+		ssize_t chunk_size;
+		while (true) // 每轮循环发走一个chunk
+		{
+			chunk_size = get_chunk_size(buffer); // 该块在this->buffer中的剩余大小
+			if (chunk_size < 0) // 块大小解析失败
+				return -1;
+			else if (chunk_size == 0) // 最后一块
+			{
+				ret = write(to_sock, "0\r\n\r\n", 5);
+				if (ret == -1)
+					return -1;
+			}
 
+			chunk_size += KMP(buffer, bf_len, "\r\n", 2) + 2; // 把块大小后面的\r\n算上
+			while (chunk_size > 0) // "发送缓存-收取"循环，直至发完该块
+			{
+				if (chunk_size >= bf_len) // 块未被接收完
+				{
+					// 发走收取的全部chunk
+					ret = write(to_sock, buffer, bf_len);
+					if (ret == -1)
+						return -1;
+					chunk_size -= bf_len;
+
+					// 继续读
+					bf_len = read(this->from_sock, buffer, BUFFER_LEN);
+					switch (this->bf_len)
+					{
+						case -1: // ERROR
+							log_error("a socket read error occurred.\n");
+							errno = 0;
+							return -1;
+						case 0: // EOF
+							return -1;
+						default: // correct
+							break;
+					}
+				} else // 块全部被缓存
+				{
+					// 发走该块的剩余部分
+					ret = write(to_sock, buffer, chunk_size);
+					if (ret == -1)
+						return -1;
+					ret = write(to_sock, "\r\n", 2);
+					if (ret == -1)
+						return -1;
+
+					// 把buffer中剩下的数据移动到开头来
+					size_t left_buf = bf_len - chunk_size - 2; // buffer中剩余有效缓存的大小，-2是为了跳过块末的\r\n
+					if (left_buf > 0) // 有有效数据
+					{
+						memmove(buffer, buffer + bf_len - left_buf, left_buf);
+						bf_len = (ssize_t) left_buf;
+					} else // 没有有效数据，read一次
+					{
+						bf_len = read(this->from_sock, buffer, BUFFER_LEN);
+						switch (this->bf_len)
+						{
+							case -1: // ERROR
+								log_error("a socket read error occurred.\n");
+								errno = 0;
+								return -1;
+							case 0: // EOF
+								return -1;
+							default: // correct
+								break;
+						}
+					}
+					break;
+				}
+			}
+		}
+	} else
+	{
+		// write body
+		ret = write(to_sock, body, body_len);
+		if (ret == -1)
+			return -1;
+	}
 	return to_sock;
 }
