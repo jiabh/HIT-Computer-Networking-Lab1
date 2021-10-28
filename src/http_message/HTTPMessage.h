@@ -50,15 +50,6 @@ public:
 	 * @return 如果成功，返回发送的套接字；失败返回-1
 	 */
 	virtual int send() = 0;
-
-protected:
-	/**
-	 * 读取报文中的headers和body
-	 * 由于HTTP请求和相应在这部分的操作完全相同，故进行封装
-	 * @param p_headers this->buffer中headers的第一个字节
-	 * @return
-	 */
-	int load_headers_and_body(char *p_headers);
 };
 
 
