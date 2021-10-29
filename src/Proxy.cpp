@@ -9,7 +9,10 @@
 #include "http_message/Request.h"
 #include "http_message/Response.h"
 #include "utils/socket_utl.h"
+#include "utils/time_utl.h"
+#include "utils/str_utl.h"
 #include "logging.h"
+#include "cache/Cache.h"
 #include "Proxy.h"
 
 
@@ -91,6 +94,18 @@ int Proxy::load_request()
 		return -1;
 	}
 
+	// 查找是否有缓存，有的话添加If-Modified-Since字段
+	if (!client_request.hostname.empty())
+	{
+		Cache *cache = Cache::get_instance();
+		CacheEntity *entity = cache->find_entity(client_request.hostname, client_request.url);
+		if (entity != nullptr) // 有缓存
+		{
+			client_request.headers["If-Modified-Since"] = string().assign(entity->modified_gmt);
+			add_modified = true;
+		}
+	}
+
 	return 0;
 }
 
@@ -120,6 +135,54 @@ int Proxy::load_response()
 		close(this->target_sock);
 		return -1;
 	}
+
+	// 缓存此响应
+	auto host_it = client_request.headers.find("Host");
+	auto lm_it = target_response.headers.find("Last-Modified");
+	if (host_it != client_request.headers.end()) // 存在Host字段
+	{
+		if (!strcmp(target_response.code, "200"))
+		{
+			if (lm_it != target_response.headers.end()
+				&& target_response.body_type == Response::BodyType::ContentLength) // 可缓存
+			{
+				Cache *cache = Cache::get_instance();
+				cache->add(host_it->second, client_request.url, (char *) lm_it->second.c_str(),
+						   target_response.body, target_response.body_len);
+			}
+		} else if (!strcmp(target_response.code, "304")) // 可能是自己加的If-Modified-Since，需判断
+		{
+			if (add_modified) // If-Modified-Since是否是自己加的，修改响应状态码并插入body
+			{
+				strcpy(target_response.code, "200"); // 状态码更新为200
+				strcpy(target_response.phrase, "OK"); // 修改状态短语（演示时可注释掉这一行）
+
+				Cache *cache = Cache::get_instance();
+				CacheEntity *entity = cache->find_entity(client_request.headers["Host"], client_request.url);
+				if (entity != nullptr)
+				{
+					target_response.headers["Content-Length"] = std::to_string(
+							entity->body_len); // 设置Content-Length响应头以描述body大小
+
+					char filename[30]; // 保存文件名
+					snprintf(filename, sizeof(filename), "cache/%zu", entity->id); // 保存在cache目录下
+					FILE *f = fopen(filename, "r");
+					target_response.body = new char[entity->body_len]; // 申请空间用于存储body
+					fread(target_response.body, entity->body_len, 1, f);
+					fclose(f);
+
+					target_response.body_len = entity->body_len;
+				} else
+				{
+					log_warn("cache entity missing!\n");
+				}
+
+				if (endswith(client_request.url, ".js")) // JS文件还需要添加Content-Type字段，否则浏览器会拒绝执行
+					target_response.headers["Content-Type"] = "application/javascript";
+			}
+		}
+	}
+
 	return 0;
 }
 

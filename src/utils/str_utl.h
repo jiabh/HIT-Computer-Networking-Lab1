@@ -40,4 +40,13 @@ std::pair<size_t, std::vector<size_t>> split_str(char *src, const char *delimite
  */
 std::string &trim(std::string &s, const std::string &pattern = " ");
 
+/**
+ * 判断字符串是否以指定后缀结尾
+ *
+ * @param s 判断的字符串
+ * @param suffix 后缀
+ * @return
+ */
+bool endswith(const string &s, const std::string &suffix);
+
 #endif //HTTP_PROXY_SERVER_STR_UTL_H

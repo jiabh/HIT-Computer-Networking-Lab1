@@ -12,7 +12,7 @@ void clear_sig_pipe()
 {
 	/**
 	 * 参考链接：send或者write socket遭遇SIGPIPE信号
-	 * https://www.cnblogs.com/klcf0220/p/5959093.html
+	 * https://www.cnblogs.com/klcf0220/ppp/5959093.html
 	 */
 	struct sigaction action{};
 	action.sa_handler = handle_pipe;

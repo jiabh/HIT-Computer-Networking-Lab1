@@ -13,11 +13,11 @@
  */
 void print_usage(char *argv[])
 {
-	printf("Usage: %s [-h] [-l listen_address] [-p port]\n\n", argv[0]);
+	printf("Usage: %s [-h] [-l listen_address] [-ppp port]\n\n", argv[0]);
 	printf("Options:\n");
 	printf("  -h                : this help\n");
 	printf("  -l listen_address : listening address\n");
-	printf("  -p port           : binding port\n");
+	printf("  -ppp port           : binding port\n");
 }
 
 ServerConfig ServerConfig::from_arg(int argc, char **argv)
@@ -25,7 +25,7 @@ ServerConfig ServerConfig::from_arg(int argc, char **argv)
 	ServerConfig config = ServerConfig();
 
 	char c;
-	while ((c = (char) getopt(argc, argv, "l:p:h")) != -1)
+	while ((c = (char) getopt(argc, argv, "l:ppp:h")) != -1)
 	{
 		switch (c)
 		{

@@ -12,7 +12,7 @@
 
 class Response : public HTTPMessage
 {
-protected:
+public:
 	enum class BodyType
 	{
 		Chunked,       // Transfer-Encoding: chunked
@@ -20,6 +20,7 @@ protected:
 		Unknown        // 未知传输格式
 	};
 	BodyType body_type = BodyType::Unknown;
+protected:
 	char *p_buf = buffer; // 指向当前buffer中的第一个有效位置
 public:
 	char code[CODE_MAX_LEN + 1]{'\0'}; // 状态码

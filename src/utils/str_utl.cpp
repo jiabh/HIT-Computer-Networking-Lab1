@@ -91,3 +91,8 @@ std::string &trim(std::string &s, const std::string &pattern)
 	s.erase(s.find_last_not_of(pattern) + 1);
 	return s;
 }
+
+bool endswith(const string &s, const std::string &suffix)
+{
+	return s.rfind(suffix) == (s.length() - suffix.length());
+}

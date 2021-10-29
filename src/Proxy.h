@@ -20,6 +20,8 @@ protected:
 	Request client_request;
 	Response target_response;
 
+	bool add_modified = false; // 是否在headers中添加了If-Modified-Since字段
+
 	std::vector<std::string> user_blacklist;
 	std::vector<std::string> host_blacklist;
 

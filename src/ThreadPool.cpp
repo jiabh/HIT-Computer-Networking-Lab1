@@ -4,11 +4,11 @@
 
 /**
  * 参考链接：
- * [C++11实现线程池](https://zhuanlan.zhihu.com/p/64739638)
+ * [C++11实现线程池](https://zhuanlan.zhihu.com/ppp/64739638)
  * [C++11多线程 unique_lock详解](https://blog.csdn.net/u012507022/article/details/85909567)
- * [有了互斥锁，为什么还要条件变量？](https://www.jianshu.com/p/01ad36b91d39)
- * [C++11（六） 条件变量（condition_variable）](https://zhuanlan.zhihu.com/p/224054283)
- * [C++11 中的std::function和std::bind](https://www.jianshu.com/p/f191e88dcc80)
+ * [有了互斥锁，为什么还要条件变量？](https://www.jianshu.com/ppp/01ad36b91d39)
+ * [C++11（六） 条件变量（condition_variable）](https://zhuanlan.zhihu.com/ppp/224054283)
+ * [C++11 中的std::function和std::bind](https://www.jianshu.com/ppp/f191e88dcc80)
  */
 
 #include <thread>
